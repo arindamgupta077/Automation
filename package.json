@@ -1,16 +1,14 @@
 {
-  "name": "daily-expense-automation",
+  "name": "expense-automation",
   "version": "1.0.0",
-  "description": "Automated daily recurring expenses processing",
+  "description": "Automated processing of recurring expenses",
   "main": "daily-expense.js",
   "scripts": {
     "start": "node daily-expense.js",
-    "test": "node daily-expense.js"
+    "process": "node daily-expense.js"
   },
-  "keywords": ["expense", "automation", "supabase", "cron"],
-  "author": "Your Name",
-  "license": "MIT",
+  "dependencies": {},
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=16.0.0"
   }
 }
