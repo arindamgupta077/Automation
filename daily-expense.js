@@ -1,4 +1,5 @@
 const https = require('https');
+const http = require('http');
 
 // Your Supabase credentials
 const SUPABASE_URL = 'https://supabase.com/dashboard/project/vurtgjyhvnaarzfbmznh';
@@ -51,20 +52,20 @@ function triggerRecurringExpenses() {
     req.end();
 }
 
-// Function to check if it's time to run (6 AM)
+// Function to check if it's time to run (6 AM UTC)
 function shouldRunNow() {
     const now = new Date();
-    const hour = now.getHours();
-    const minute = now.getMinutes();
+    const hour = now.getUTCHours(); // Use UTC for Render
+    const minute = now.getUTCMinutes();
     
-    // Run at 6:00 AM
+    // Run at 6:00 AM UTC
     return hour === 6 && minute === 0;
 }
 
 // Function to run every minute and check if it's time
 function startScheduler() {
-    console.log(`[${new Date().toISOString()}] 🚀 Daily expense scheduler started`);
-    console.log(`[${new Date().toISOString()}] 📅 Will run daily at 6:00 AM`);
+    console.log(`[${new Date().toISOString()}] �� Daily expense scheduler started on Render`);
+    console.log(`[${new Date().toISOString()}] 📅 Will run daily at 6:00 AM UTC`);
     console.log(`[${new Date().toISOString()}] 🔄 Checking every minute...`);
     
     // Run immediately for testing
@@ -79,13 +80,62 @@ function startScheduler() {
     }, 60000); // Check every minute
 }
 
+// Create a simple HTTP server for Render
+const server = http.createServer((req, res) => {
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    if (req.method === 'OPTIONS') {
+        res.writeHead(200);
+        res.end();
+        return;
+    }
+    
+    if (req.url === '/health' || req.url === '/') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+            status: 'healthy',
+            service: 'expense-automation',
+            timestamp: new Date().toISOString(),
+            message: 'Daily expense automation is running',
+            nextRun: '6:00 AM UTC daily'
+        }));
+    } else if (req.url === '/trigger') {
+        // Manual trigger endpoint
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+            message: 'Manual trigger initiated',
+            timestamp: new Date().toISOString()
+        }));
+        triggerRecurringExpenses();
+    } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ 
+            error: 'Not found',
+            availableEndpoints: ['/health', '/trigger']
+        }));
+    }
+});
+
+// Start the HTTP server
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`[${new Date().toISOString()}] 🌐 HTTP server started on port ${PORT}`);
+    console.log(`[${new Date().toISOString()}] �� Health check: http://localhost:${PORT}/health`);
+    console.log(`[${new Date().toISOString()}] 🔗 Manual trigger: http://localhost:${PORT}/trigger`);
+});
+
 // Start the scheduler
 startScheduler();
 
 // Keep the process running
 process.on('SIGINT', () => {
     console.log(`[${new Date().toISOString()}] 👋 Shutting down scheduler...`);
-    process.exit(0);
+    server.close(() => {
+        process.exit(0);
+    });
 });
 
-console.log(`[${new Date().toISOString()}] 💡 Press Ctrl+C to stop the scheduler`);
+console.log(`[${new Date().toISOString()}] 💡 Expense automation is now running on Render!`);
